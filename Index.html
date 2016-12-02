@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oscilloscope</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="cvs"></canvas>
+    <script type="text/javascript">
+        var cvs = document.getElementById("cvs");
+        cvs.width = window.innerWidth;
+        cvs.height = window.innerHeight;
+
+        let viewHeight = 8;
+
+        var ctx = cvs.getContext('2d');
+
+        ctx.strokeStyle = 'rgba(0,255,0,0.8)';
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.lineWidth = 2;
+
+        const offset = 0.1 * cvs.height;
+
+        const aspect = cvs.height / cvs.width;
+
+        const pointsCount = 1200;
+        const dt = 0.01;
+        let t = 0;
+
+        function clear() {
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
+        }
+
+        let spins = 60;
+        let pi = Math.PI;
+        let pi2 = Math.PI * 2;
+
+        function last_quarter(t) {
+            if (t < pi / 2)
+                return 0.15;
+            else
+                return Math.sin(t);
+        }
+
+        function x_function(t) {
+            with (Math) {
+                let w = (t % pi2) - pi;
+                let x = sin(spins * t);
+                x *= last_quarter(w);
+
+                let w2 = (t * 0.99 % pi2) - pi;
+                x += (w + pi) * 0.3 * sin(w2);
+
+                return x;
+            }
+        }
+
+        function y_function(t) {
+            with (Math) {
+                let w = (t % pi2) - pi;
+                let x = w;
+                x += -0.15 * last_quarter(w) * cos(spins * t);
+                return x;
+            }
+        }
+
+        function step() {
+            clear();
+
+            let x = (x_function(t) / viewHeight * aspect + 0.5) * cvs.width;
+            let y = (0.5 - y_function(t) / viewHeight) * cvs.height;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            for (let i = 0; i < pointsCount; i++) {
+                t += dt;
+
+                let prevx = x;
+                let prevy = y;
+
+                x = (x_function(t) / viewHeight * aspect + 0.5) * cvs.width;
+                y = (0.5 - y_function(t) / viewHeight) * cvs.height;
+
+                if (Math.abs(x - prevx) < offset && Math.abs(y - prevy) < offset)
+                    ctx.lineTo(x, y);
+                else
+                    ctx.moveTo(x, y);
+            }
+
+            ctx.stroke();
+
+            requestAnimationFrame(step);
+        }
+
+        step();
+
+    </script>
+</body>
+</html>
